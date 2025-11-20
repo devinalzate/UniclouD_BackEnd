@@ -1,0 +1,30 @@
+services:
+  db:
+     image: postgres:16
+     container_name: unicloud_db
+     env_file:
+       - .env
+     ports:
+       - "${DB_PORT}:5432"
+     volumes:
+       - ./tablas:/docker-entrypoint-initdb.d
+     restart: unless-stopped
+
+  wait:
+    image: willwill/wait-for-it
+    command: -t 60 db:5432
+    depends_on:
+      - db
+
+  migrations:
+    image: flyway/flyway:9.22
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://db:${DB_PORT}/${POSTGRES_DB}
+      - FLYWAY_USER=${POSTGRES_USER}
+      - FLYWAY_PASSWORD=${POSTGRES_PASSWORD}
+      - FLYWAY_VALIDATE_MIGRATION_NAMING=true
+    command: migrate
+    volumes:
+      - ./tablas:/flyway/sql
+    depends_on:
+      - wait

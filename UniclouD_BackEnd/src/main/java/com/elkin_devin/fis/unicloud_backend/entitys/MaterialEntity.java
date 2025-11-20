@@ -19,6 +19,7 @@ public class MaterialEntity {
     @Column(name = "Id")
     private Long idMaterial;
 
+    private String ruta_archivo;
     private String titulo;
     private String año; /* Este es guardado en forma \"2025-1\" */
 

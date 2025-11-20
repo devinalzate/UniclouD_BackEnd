@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @AllArgsConstructor
 public class DTOMaterial {
     private Long idMaterial;
+    private String ruta_archivo;
     private String titulo;
     private String año;
 }

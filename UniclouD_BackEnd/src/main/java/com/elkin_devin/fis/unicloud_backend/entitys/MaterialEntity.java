@@ -23,7 +23,7 @@ public class MaterialEntity {
     private String titulo;
     private String año; /* Este es guardado en forma \"2025-1\" */
 
-    // Relación uno-a-muchos con ArticuloGeneral
-    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
-    private List<ArticuloGeneralEntity> articulosRelacionados = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "material_id")  // Especifica la columna FK
+    private List<ArticuloGeneralEntity> articulosRelacionados;
 }

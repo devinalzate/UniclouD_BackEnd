@@ -21,33 +21,33 @@ public class ArticuloGeneralEntity {
     private Long idMaterial;
 
     @Id
-    @Column(name = "IdUniversidad")
+    @Column(name = "iduniversidad")
     private Long idUniversidad;
 
     @Id
-    @Column(name = "IdAsignatura")
+    @Column(name = "idasignatura")
     private Long idAsignatura;
 
     @Id
-    @Column(name = "IdProfesor")
+    @Column(name = "idprofesor")
     private Long idProfesor;
-
-    // Relación ManyToOne hacia Material
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "material_id", insertable = false, updatable = false)
-    private MaterialEntity material;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "IdUniversidad", insertable = false, updatable = false)
-    private UniversidadEntity universidad;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "IdAsignatura", insertable = false, updatable = false)
-    private AsignaturaEntity asignatura;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "IdProfesor", insertable = false, updatable = false)
-    private ProfesorEntity profesor;
+//
+//    // Relación ManyToOne hacia Material
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "material_id", insertable = false, updatable = false)
+//    private MaterialEntity material;
+//
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "iduniversidad", insertable = false, updatable = false)
+//    private UniversidadEntity universidad;
+//
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "idasignatura", insertable = false, updatable = false)
+//    private AsignaturaEntity asignatura;
+//
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "idprofesor", insertable = false, updatable = false)
+//    private ProfesorEntity profesor;
 
     @Data
     @AllArgsConstructor

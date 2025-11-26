@@ -1,7 +1,11 @@
 package com.elkin_devin.fis.unicloud_backend.services;
 
+import com.elkin_devin.fis.unicloud_backend.dtos.DTOArticuloGeneral;
 import com.elkin_devin.fis.unicloud_backend.dtos.DTOMaterial;
+import com.elkin_devin.fis.unicloud_backend.entitys.ArticuloGeneralEntity;
 import com.elkin_devin.fis.unicloud_backend.entitys.MaterialEntity;
+import com.elkin_devin.fis.unicloud_backend.repositorys.ArticuloGeneralRepository;
+import com.elkin_devin.fis.unicloud_backend.utils.ArticuloGeneralMapper;
 import com.elkin_devin.fis.unicloud_backend.utils.MaterialMapper;
 import com.elkin_devin.fis.unicloud_backend.repositorys.MaterialRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +27,123 @@ public class MaterialService {
 
     private final MaterialRepository materialRepository;
     private final MaterialMapper materialMapper;
+    private final ArticuloGeneralRepository articuloGeneralRepository;
+    private final ArticuloGeneralMapper articuloGeneralMapper;
 
     // Ruta base para guardar archivos (dentro de resources)
     private static final String UPLOAD_DIR = "src/main/resources/uploads/";
+
+
+    /**
+     * Crear material con archivo y asociarlo a múltiples entidades
+     * Crea un ArticuloGeneral para cada combinación de universidad, asignatura y profesor
+     */
+    public boolean crearMaterialConArticulos(DTOMaterial materialDTO, MultipartFile archivo,
+                                             List<Long> universidadIds,
+                                             List<Long> asignaturaIds,
+                                             List<Long> profesorIds) {
+        try {
+            // Validar archivo
+            if (archivo == null || archivo.isEmpty()) {
+                throw new IllegalArgumentException("El archivo no puede estar vacío");
+            }
+
+            // Validar que al menos haya una de cada
+            if (universidadIds == null || universidadIds.isEmpty()) {
+                throw new IllegalArgumentException("Debe proporcionar al menos una universidad");
+            }
+            if (asignaturaIds == null || asignaturaIds.isEmpty()) {
+                throw new IllegalArgumentException("Debe proporcionar al menos una asignatura");
+            }
+            if (profesorIds == null || profesorIds.isEmpty()) {
+                throw new IllegalArgumentException("Debe proporcionar al menos un profesor");
+            }
+
+            // Crear el material con el archivo
+            boolean materialCreado = crearMaterial(materialDTO, archivo);
+            if (!materialCreado) {
+                throw new Exception("Error al crear el material");
+            }
+
+            // Obtener el ID del material creado
+            List<MaterialEntity> materiales = materialRepository.findByTituloContainingIgnoreCase(materialDTO.getTitulo());
+            if (materiales.isEmpty()) {
+                throw new Exception("No se pudo recuperar el material creado");
+            }
+            Long materialId = materiales.get(0).getIdMaterial();
+
+            // Crear ArticuloGeneral para cada combinación
+            for (Long universidadId : universidadIds) {
+                for (Long asignaturaId : asignaturaIds) {
+                    for (Long profesorId : profesorIds) {
+                        DTOArticuloGeneral articuloDTO = new DTOArticuloGeneral();
+                        articuloDTO.setMaterialId(materialId);
+                        articuloDTO.setUniversidadId(universidadId);
+                        articuloDTO.setAsignaturaId(asignaturaId);
+                        articuloDTO.setProfesorId(profesorId);
+
+                        // Crear el artículo (sin validar existencia de entidades, asumimos que ya existen)
+                        try {
+                            ArticuloGeneralEntity entity = articuloGeneralMapper.dtoToEntity(articuloDTO);
+                            articuloGeneralRepository.save(entity);
+                        } catch (Exception e) {
+                            System.err.println("Error al crear artículo: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Descargar material por ID
+     * Retorna el archivo como bytes
+     */
+    public byte[] descargarMaterial(Long id) throws IOException {
+        Optional<MaterialEntity> material = materialRepository.findById(id);
+
+        if (material.isEmpty()) {
+            throw new IllegalArgumentException("Material con ID " + id + " no existe");
+        }
+
+        String rutaArchivo = material.get().getRuta_archivo();
+
+        if (rutaArchivo == null || rutaArchivo.isEmpty()) {
+            throw new IllegalArgumentException("El material no tiene archivo asociado");
+        }
+
+        Path path = Paths.get(rutaArchivo);
+
+        if (!Files.exists(path)) {
+            throw new IllegalArgumentException("El archivo no existe en la ruta: " + rutaArchivo);
+        }
+
+        return Files.readAllBytes(path);
+    }
+
+    /**
+     * Obtener el nombre del archivo
+     */
+    public String obtenerNombreArchivo(Long id) throws IOException {
+        Optional<MaterialEntity> material = materialRepository.findById(id);
+
+        if (material.isEmpty()) {
+            throw new IllegalArgumentException("Material con ID " + id + " no existe");
+        }
+
+        String rutaArchivo = material.get().getRuta_archivo();
+        Path path = Paths.get(rutaArchivo);
+
+        return path.getFileName().toString();
+    }
 
     /**
      * Crear material con archivo

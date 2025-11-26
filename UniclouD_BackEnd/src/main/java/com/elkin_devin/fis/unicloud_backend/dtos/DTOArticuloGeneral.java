@@ -8,9 +8,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @AllArgsConstructor
 public class DTOArticuloGeneral {
-    private Long id;
-    private DTOMaterial materialId;
-    private DTOUniversidad universidadId;
-    private DTOAsignatura asignaturaId;
-    private DTOProfesor profesorId;
+    private Long materialId;
+    private Long universidadId;
+    private Long asignaturaId;
+    private Long profesorId;
 }

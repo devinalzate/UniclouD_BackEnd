@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,58 @@ import java.util.Map;
 public class MaterialController {
 
     private final MaterialService materialService;
+
+
+    /**
+     * Crear material con archivo y asociarlo a múltiples universidades, asignaturas y profesores
+     * POST /unicloud/materiales/con-articulos
+     *
+     * Forma: multipart/form-data
+     * - titulo (String)
+     * - año (String)
+     * - archivo (File)
+     * - universidadIds (Long[] o List<Long>)
+     * - asignaturaIds (Long[] o List<Long>)
+     * - profesorIds (Long[] o List<Long>)
+     */
+    @PostMapping("/con-articulos")
+    public ResponseEntity<?> crearMaterialConArticulos(
+            @RequestParam String titulo,
+            @RequestParam String año,
+            @RequestParam MultipartFile archivo,
+            @RequestParam List<Long> universidadIds,
+            @RequestParam List<Long> asignaturaIds,
+            @RequestParam List<Long> profesorIds) {
+
+        try {
+            DTOMaterial materialDTO = new DTOMaterial();
+            materialDTO.setTitulo(titulo);
+            materialDTO.setAño(año);
+
+            if (materialService.crearMaterialConArticulos(materialDTO, archivo, universidadIds, asignaturaIds, profesorIds)) {
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(Map.of(
+                                "success", true,
+                                "message", "Material creado y asociado a " +
+                                        (universidadIds.size() * asignaturaIds.size() * profesorIds.size()) +
+                                        " combinaciones",
+                                "combinaciones", universidadIds.size() * asignaturaIds.size() * profesorIds.size()
+                        ));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of(
+                                "success", false,
+                                "message", "Error al crear el material"
+                        ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Error: " + e.getMessage()
+                    ));
+        }
+    }
 
     /**
      * Crear material con archivo
@@ -58,6 +111,47 @@ public class MaterialController {
                     ));
         }
     }
+
+    /**
+     * Descargar archivo de material
+     * GET /unicloud/materiales/{id}/descargar
+     */
+    @GetMapping("/{id}/descargar")
+    public ResponseEntity<?> descargarMaterial(@PathVariable Long id) {
+        try {
+            // Obtener los bytes del archivo
+            byte[] contenidoArchivo = materialService.descargarMaterial(id);
+
+            // Obtener el nombre del archivo
+            String nombreArchivo = materialService.obtenerNombreArchivo(id);
+
+            // Retornar el archivo con headers de descarga
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=\"" + nombreArchivo + "\"")
+                    .header("Content-Type", "application/octet-stream")
+                    .body(contenidoArchivo);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Error al leer el archivo: " + e.getMessage()
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Error: " + e.getMessage()
+                    ));
+        }
+    }
+
 
     /**
      * Obtener todos los materiales

@@ -3,37 +3,84 @@ package com.elkin_devin.fis.unicloud_backend.controllers;
 import com.elkin_devin.fis.unicloud_backend.dtos.DTOProfesor;
 import com.elkin_devin.fis.unicloud_backend.services.ProfesorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
-@Service
+@RestController
+@RequestMapping("/unicloud/profesores")
 @RequiredArgsConstructor
-@RestController("/unicloud/profesores")
 public class ProfesorController {
+
     private final ProfesorService profesorService;
 
+    /**
+     * Crear profesor
+     */
     @PostMapping
-    private ResponseEntity<?> crearProfesor(@RequestBody DTOProfesor dto) {
-        if(profesorService.crearProfesor(dto)){
-            return ResponseEntity.ok().build();
-        }
-        else{
-            return ResponseEntity.badRequest().build();
+    public ResponseEntity<?> crearProfesor(@RequestBody DTOProfesor dto) {
+        try {
+            if (profesorService.crearProfesor(dto)) {
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(Map.of(
+                                "success", true,
+                                "message", "Profesor creado exitosamente",
+                                "data", dto
+                        ));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of(
+                                "success", false,
+                                "message", "Error al crear el profesor"
+                        ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Error: " + e.getMessage()
+                    ));
         }
     }
 
+    /**
+     * Obtener todos los profesores
+     */
     @GetMapping
-    private ResponseEntity<?> getProfesores() {
+    public ResponseEntity<?> obtenerTodos() {
         List<DTOProfesor> lista = profesorService.obtenerTodas();
-        if(lista.isEmpty()){
+        if (lista.isEmpty()) {
             return ResponseEntity.notFound().build();
-        }else {
+        } else {
+            return ResponseEntity.ok().body(lista);
+        }
+    }
+
+    /**
+     * Buscar profesor por ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        DTOProfesor dto = profesorService.buscarPorId(id);
+        if (dto != null) {
+            return ResponseEntity.ok().body(dto);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Buscar profesores por nombre
+     */
+    @GetMapping("/buscar/{nombre}")
+    public ResponseEntity<?> buscarPorNombre(@PathVariable String nombre) {
+        List<DTOProfesor> lista = profesorService.buscarPorNombre(nombre);
+        if (lista.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        } else {
             return ResponseEntity.ok().body(lista);
         }
     }
